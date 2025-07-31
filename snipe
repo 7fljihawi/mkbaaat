@@ -1,0 +1,130 @@
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local player = Players.LocalPlayer
+
+local API_URL = "https://robloxcodesaved.BaconGG.repl.co/verify-code" -- رابط API الحقيقي
+
+local accessGranted = false
+local snipingEnabled = true
+local snipeGui, snipeButton
+
+-- إنشاء واجهة إدخال الكود
+local function createCodeInputGUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "CodeInputGUI"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 300, 0, 160)
+    frame.Position = UDim2.new(0.5, -150, 0.5, -80)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    frame.Parent = screenGui
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0.1, 0)
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0.3, 0)
+    title.Text = "🔐 Enter Access Code"
+    title.TextColor3 = Color3.new(1,1,1)
+    title.BackgroundTransparency = 1
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 20
+    title.Parent = frame
+
+    local inputBox = Instance.new("TextBox")
+    inputBox.PlaceholderText = "Type your code here..."
+    inputBox.Size = UDim2.new(0.8, 0, 0.3, 0)
+    inputBox.Position = UDim2.new(0.1, 0, 0.4, 0)
+    inputBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    inputBox.TextColor3 = Color3.new(1,1,1)
+    inputBox.Font = Enum.Font.Gotham
+    inputBox.TextSize = 18
+    inputBox.Parent = frame
+    Instance.new("UICorner", inputBox).CornerRadius = UDim.new(0.2, 0)
+
+    local confirmBtn = Instance.new("TextButton")
+    confirmBtn.Text = "✅ Confirm"
+    confirmBtn.Size = UDim2.new(0.6, 0, 0.2, 0)
+    confirmBtn.Position = UDim2.new(0.2, 0, 0.75, 0)
+    confirmBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    confirmBtn.TextColor3 = Color3.new(1,1,1)
+    confirmBtn.Font = Enum.Font.GothamBold
+    confirmBtn.TextSize = 18
+    confirmBtn.Parent = frame
+    Instance.new("UICorner", confirmBtn).CornerRadius = UDim.new(0.2, 0)
+
+    confirmBtn.MouseButton1Click:Connect(function()
+        local code = inputBox.Text
+        if code == "" then
+            inputBox.Text = ""
+            inputBox.PlaceholderText = "❌ Please enter a code!"
+            return
+        end
+
+        local payload = HttpService:JSONEncode({
+            username = player.Name,
+            code = code
+        })
+
+        local success, response = pcall(function()
+            return HttpService:PostAsync(API_URL, payload, Enum.HttpContentType.ApplicationJson)
+        end)
+
+        if success then
+            local data = HttpService:JSONDecode(response)
+            if data.success then
+                accessGranted = true
+                screenGui:Destroy()
+                createSnipeButton()
+                print("✅ Access Granted: "..data.message)
+            else
+                inputBox.Text = ""
+                inputBox.PlaceholderText = "❌ "..data.message
+                print("❌ Access Denied: "..data.message)
+            end
+        else
+            inputBox.Text = ""
+            inputBox.PlaceholderText = "❌ Server not reachable"
+            print("❌ Failed to contact server")
+        end
+    end)
+end
+
+-- إنشاء زر السنايب في أعلى اليسار
+function createSnipeButton()
+    snipeGui = Instance.new("ScreenGui")
+    snipeGui.Name = "SnipeToggleGUI"
+    snipeGui.ResetOnSpawn = false
+    snipeGui.Parent = player:WaitForChild("PlayerGui")
+
+    snipeButton = Instance.new("TextButton")
+    snipeButton.Name = "ToggleButton"
+    snipeButton.Text = "🔫 Auto Snipe: ON"
+    snipeButton.Size = UDim2.new(0, 180, 0, 50)
+    snipeButton.Position = UDim2.new(0, 10, 0, 10) -- أعلى يسار
+    snipeButton.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
+    snipeButton.TextColor3 = Color3.new(1, 1, 1)
+    snipeButton.Font = Enum.Font.GothamBold
+    snipeButton.TextSize = 16
+    snipeButton.BorderSizePixel = 0
+    snipeButton.BackgroundTransparency = 0.1
+    snipeButton.AutoButtonColor = true
+    snipeButton.Parent = snipeGui
+    Instance.new("UICorner", snipeButton).CornerRadius = UDim.new(0.2, 0)
+
+    snipeButton.MouseButton1Click:Connect(function()
+        snipingEnabled = not snipingEnabled
+        if snipingEnabled then
+            snipeButton.Text = "🔫 Auto Snipe: ON"
+            snipeButton.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
+            print("✅ Auto Snipe: ON")
+        else
+            snipeButton.Text = "🔫 Auto Snipe: OFF"
+            snipeButton.BackgroundColor3 = Color3.fromRGB(178, 34, 34)
+            print("⛔ Auto Snipe: OFF")
+        end
+    end)
+end
+
+-- في البداية نعرض نافذة إدخال الكود
+createCodeInputGUI()
