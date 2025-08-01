@@ -15,7 +15,7 @@ local BuyRF = MarketService:WaitForChild("RF"):WaitForChild("Buy")
 local ItemRefreshed = MarketService:WaitForChild("RE"):WaitForChild("ItemRefreshed")
 
 local allowedUserIds = {
-	[7785950571] = true,
+	[1701401032] = true,
 	[1394697627] = true,
 	[3859777415] = true,
 	[2599550082] = true,
