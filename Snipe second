@@ -103,7 +103,6 @@ autoSnipeButton.MouseButton1Click:Connect(function()
 	autoSnipeButton.TextColor3 = snipingEnabled and Color3.new(1, 1, 1) or Color3.fromRGB(150, 150, 150)
 end)
 
--- 🔁 updateStatus
 local function updateStatus(item)
 	if not item or not item:IsA("Instance") or not item.Name then
 		statusLabel.Text = "⚪️ لا يوجد عنصر"
