@@ -14,7 +14,6 @@ local MarketService = ReplicatedStorage:WaitForChild("Packages")
 local BuyRF = MarketService:WaitForChild("RF"):WaitForChild("Buy")
 local ItemRefreshed = MarketService:WaitForChild("RE"):WaitForChild("ItemRefreshed")
 
--- 🛡️ UserId التحقق
 local allowedUserIds = {
 	[7785950571] = true,
 	[1394697627] = true,
@@ -29,9 +28,8 @@ if not allowedUserIds[player.UserId] then
 end
 
 local snipingEnabled = true
-local lastItemId = nil
 
--- === GUI ===
+-- GUI setup
 local playerGui = player:WaitForChild("PlayerGui")
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "SnipeSettingsGUI"
@@ -39,90 +37,28 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
 local toggleButton = Instance.new("TextButton")
-toggleButton.Size = UDim2.new(0, 100, 0, 35)
-toggleButton.Position = UDim2.new(0, 10, 0, 160)
-toggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+toggleButton.Size = UDim2.new(0, 140, 0, 35)
+toggleButton.Position = UDim2.new(0, 10, 0, 10)
+toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 toggleButton.TextColor3 = Color3.new(1, 1, 1)
-toggleButton.Text = "👁 إظهار القائمة"
-toggleButton.Font = Enum.Font.Gotham
-toggleButton.TextSize = 14
+toggleButton.Text = "✔ Auto Snipe: ON"
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.TextSize = 16
 toggleButton.Parent = screenGui
 Instance.new("UICorner", toggleButton).CornerRadius = UDim.new(0, 6)
 
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 220, 0, 140)
-mainFrame.Position = UDim2.new(0, 10, 0, 10)
-mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-mainFrame.BorderSizePixel = 0
-mainFrame.Visible = false
-mainFrame.Parent = screenGui
-Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
-
 toggleButton.MouseButton1Click:Connect(function()
-	mainFrame.Visible = not mainFrame.Visible
-	toggleButton.Text = mainFrame.Visible and "🔒 إخفاء القائمة" or "👁 إظهار القائمة"
-end)
-
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -20, 0, 30)
-titleLabel.Position = UDim2.new(0, 10, 0, 5)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "Snipe Script"
-titleLabel.TextColor3 = Color3.new(1, 1, 1)
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextSize = 18
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel.Parent = mainFrame
-
-local autoSnipeButton = Instance.new("TextButton")
-autoSnipeButton.Size = UDim2.new(1, -20, 0, 35)
-autoSnipeButton.Position = UDim2.new(0, 10, 0, 40)
-autoSnipeButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-autoSnipeButton.TextColor3 = Color3.new(1, 1, 1)
-autoSnipeButton.Text = "✔ Auto Snipe: ON"
-autoSnipeButton.Font = Enum.Font.GothamBold
-autoSnipeButton.TextSize = 16
-autoSnipeButton.Parent = mainFrame
-Instance.new("UICorner", autoSnipeButton).CornerRadius = UDim.new(0, 6)
-
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(1, -20, 0, 35)
-statusLabel.Position = UDim2.new(0, 10, 0, 80)
-statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "⚪️ لا يوجد عنصر بعد"
-statusLabel.TextColor3 = Color3.new(1, 1, 1)
-statusLabel.Font = Enum.Font.GothamBold
-statusLabel.TextSize = 16
-statusLabel.TextWrapped = true
-statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-statusLabel.Parent = mainFrame
-
-autoSnipeButton.MouseButton1Click:Connect(function()
 	snipingEnabled = not snipingEnabled
-	autoSnipeButton.Text = snipingEnabled and "✔ Auto Snipe: ON" or "✘ Auto Snipe: OFF"
-	autoSnipeButton.TextColor3 = snipingEnabled and Color3.new(1, 1, 1) or Color3.fromRGB(150, 150, 150)
+	if snipingEnabled then
+		toggleButton.Text = "✔ Auto Snipe: ON"
+		toggleButton.TextColor3 = Color3.new(1, 1, 1)
+	else
+		toggleButton.Text = "✘ Auto Snipe: OFF"
+		toggleButton.TextColor3 = Color3.fromRGB(150, 150, 150)
+	end
 end)
 
-local function updateStatus(item)
-	if not item then
-		statusLabel.Text = "⚪️ لا يوجد عنصر جديد"
-		print("⚪️ لا يوجد عنصر جديد")
-		return
-	end
-
-	if lastItemId ~= item.Name then
-		local msg = "🟢 عنصر جديد: " .. item.Name
-		statusLabel.Text = msg
-		print(msg)
-		lastItemId = item.Name
-	else
-		local msg = "⚪️ لا يوجد عنصر جديد"
-		statusLabel.Text = msg
-		print(msg)
-	end
-end
-
--- 🔁 autoBuyItem
+-- auto buy function
 local function autoBuyItem(item)
 	if not snipingEnabled then return end
 	task.spawn(function()
@@ -131,8 +67,7 @@ local function autoBuyItem(item)
 		local quantity = tonumber(item:GetAttribute("quantitySold"))
 		local now = os.time()
 
-		print("📦 Preparing to buy:", itemId, "Qty:", quantity or "?", "Release:", releaseTime or "N/A")
-		updateStatus(item)
+		print("📦 Trying:", itemId, "Qty:", quantity or "?", "Release:", releaseTime or "N/A")
 
 		if not quantity or quantity >= 50 then
 			print("❌ Skipping:", itemId, "(quantity too high:", quantity or "nil", ")")
@@ -141,7 +76,9 @@ local function autoBuyItem(item)
 
 		if releaseTime and now < releaseTime then
 			print("⏳ Waiting until release:", itemId)
-			while os.time() < releaseTime do task.wait(0.1) end
+			while os.time() < releaseTime do
+				task.wait(0.1)
+			end
 		end
 
 		local bought = 0
@@ -161,23 +98,20 @@ local function autoBuyItem(item)
 	end)
 end
 
--- 🟢 Marketplace مراقبة
+-- Events
 Marketplace.ChildAdded:Connect(function(item)
-	print("🟢 New Item Detected:", item.Name)
-	updateStatus(item)
+	print("🟢 New item detected:", item.Name)
 	autoBuyItem(item)
 end)
 
--- 🔄 Refreshed
 ItemRefreshed.OnClientEvent:Connect(function(itemId)
-	print("🔄 Item Refreshed:", itemId)
 	local item = Marketplace:FindFirstChild(itemId)
-	if not item then task.wait(0.2); item = Marketplace:FindFirstChild(itemId) end
-	updateStatus(item)
-	autoBuyItem(item)
+	if item then
+		autoBuyItem(item)
+	end
 end)
 
--- عند الدخول: آخر عنصر
+-- Buy last item on join
 local lastItem, lastTime = nil, -math.huge
 for _, itm in ipairs(Marketplace:GetChildren()) do
 	local rt = tonumber(itm:GetAttribute("releaseTime"))
@@ -187,13 +121,10 @@ for _, itm in ipairs(Marketplace:GetChildren()) do
 end
 if lastItem then
 	print("🟢 Buying last item at join:", lastItem.Name)
-	updateStatus(lastItem)
 	autoBuyItem(lastItem)
-else
-	print("❌ No item at join")
 end
 
--- 💤 Anti-AFK
+-- Anti-AFK
 task.spawn(function()
 	while true do
 		task.wait(300)
