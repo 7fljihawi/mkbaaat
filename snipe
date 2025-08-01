@@ -2,12 +2,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
+local snipingEnabled = true
+
 local allowedUserIds = {
-    [0] = true,
-    [0] = true,
-    [0] = true,
-    [0] = true,
-    [1701401032] = true,
     [7785950571] = true,
     [1394697627] = true,
     [3859777415] = true,
@@ -20,7 +17,6 @@ if not allowedUserIds[player.UserId] then
     return
 end
 
--- ✅ مسموح له - نكمل
 local Marketplace = ReplicatedStorage:WaitForChild("Marketplace")
 
 local MarketService = ReplicatedStorage:WaitForChild("Packages")
@@ -33,9 +29,43 @@ local MarketService = ReplicatedStorage:WaitForChild("Packages")
 local BuyRF = MarketService:WaitForChild("RF"):WaitForChild("Buy")
 local ItemRefreshed = MarketService:WaitForChild("RE"):WaitForChild("ItemRefreshed")
 
-local snipingEnabled = true
+local function createSnipeButton()
+    local playerGui = player:WaitForChild("PlayerGui")
 
--- 🎯 Auto Buy Function
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "SnipeToggleGUI"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = playerGui
+
+    local snipeButton = Instance.new("TextButton")
+    snipeButton.Name = "ToggleButton"
+    snipeButton.Text = "🔫 Auto Snipe: ON"
+    snipeButton.Size = UDim2.new(0, 180, 0, 50)
+    snipeButton.Position = UDim2.new(0, 10, 0, 10)
+    snipeButton.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
+    snipeButton.TextColor3 = Color3.new(1, 1, 1)
+    snipeButton.Font = Enum.Font.GothamBold
+    snipeButton.TextSize = 16
+    snipeButton.BorderSizePixel = 0
+    snipeButton.BackgroundTransparency = 0.1
+    snipeButton.AutoButtonColor = true
+    snipeButton.Parent = screenGui
+    Instance.new("UICorner", snipeButton).CornerRadius = UDim.new(0.2, 0)
+
+    snipeButton.MouseButton1Click:Connect(function()
+        snipingEnabled = not snipingEnabled
+        if snipingEnabled then
+            snipeButton.Text = "🔫 Auto Snipe: ON"
+            snipeButton.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
+            print("✅ Auto Snipe: ON")
+        else
+            snipeButton.Text = "🔫 Auto Snipe: OFF"
+            snipeButton.BackgroundColor3 = Color3.fromRGB(178, 34, 34)
+            print("⛔ Auto Snipe: OFF")
+        end
+    end)
+end
+
 local function autoBuyItem(item)
     if not snipingEnabled then return end
     task.spawn(function()
@@ -75,13 +105,11 @@ local function autoBuyItem(item)
     end)
 end
 
--- 🟢 Detect New Items
 Marketplace.ChildAdded:Connect(function(item)
     print("🟢 New Item Detected:", item.Name)
     autoBuyItem(item)
 end)
 
--- 🔄 Refreshed Item Handler
 ItemRefreshed.OnClientEvent:Connect(function(itemId)
     print("🔄 Item Refreshed:", itemId)
     local item = Marketplace:FindFirstChild(itemId)
@@ -106,7 +134,6 @@ ItemRefreshed.OnClientEvent:Connect(function(itemId)
     end
 end)
 
--- 🔃 Buy latest on join
 local lastItem = nil
 local lastTime = -math.huge
 
@@ -125,41 +152,4 @@ else
     print("❌ No item at join")
 end
 
--- GUI زر السنايب
-local function createSnipeButton()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "SnipeToggleGUI"
-    screenGui.ResetOnSpawn = false
-    screenGui.Parent = player:WaitForChild("PlayerGui")
-
-    local snipeButton = Instance.new("TextButton")
-    snipeButton.Name = "ToggleButton"
-    snipeButton.Text = "🔫 Auto Snipe: ON"
-    snipeButton.Size = UDim2.new(0, 180, 0, 50)
-    snipeButton.Position = UDim2.new(0, 10, 0, 10) -- أعلى اليسار
-    snipeButton.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
-    snipeButton.TextColor3 = Color3.new(1, 1, 1)
-    snipeButton.Font = Enum.Font.GothamBold
-    snipeButton.TextSize = 16
-    snipeButton.BorderSizePixel = 0
-    snipeButton.BackgroundTransparency = 0.1
-    snipeButton.AutoButtonColor = true
-    snipeButton.Parent = screenGui
-    Instance.new("UICorner", snipeButton).CornerRadius = UDim.new(0.2, 0)
-
-    snipeButton.MouseButton1Click:Connect(function()
-        snipingEnabled = not snipingEnabled
-        if snipingEnabled then
-            snipeButton.Text = "🔫 Auto Snipe: ON"
-            snipeButton.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
-            print("✅ Auto Snipe: ON")
-        else
-            snipeButton.Text = "🔫 Auto Snipe: OFF"
-            snipeButton.BackgroundColor3 = Color3.fromRGB(178, 34, 34)
-            print("⛔ Auto Snipe: OFF")
-        end
-    end)
-end
-
--- إنشاء الزر فقط إذا مسموح
 createSnipeButton()
