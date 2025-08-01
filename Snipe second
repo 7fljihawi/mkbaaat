@@ -69,7 +69,7 @@ local function autoBuyItem(item)
 
 		print("📦 Trying:", itemId, "Qty:", quantity or "?", "Release:", releaseTime or "N/A")
 
-		if not quantity or quantity >= 50 then
+		if not quantity or quantity >= 30 then
 			print("❌ Skipping:", itemId, "(quantity too high:", quantity or "nil", ")")
 			return
 		end
