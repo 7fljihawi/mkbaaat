@@ -103,16 +103,18 @@ autoSnipeButton.MouseButton1Click:Connect(function()
 	autoSnipeButton.TextColor3 = snipingEnabled and Color3.new(1, 1, 1) or Color3.fromRGB(150, 150, 150)
 end)
 
+-- 🔁 updateStatus
 local function updateStatus(item)
-	if not item then
+	if not item or not item:IsA("Instance") or not item.Name then
 		statusLabel.Text = "⚪️ لا يوجد عنصر"
 		return
 	end
+
 	if lastItemId ~= item.Name then
 		statusLabel.Text = "🟢 عنصر جديد: " .. item.Name
 		lastItemId = item.Name
 	else
-		statusLabel.Text = ": هذا هو آخر عنصر" .. item.Name
+		statusLabel.Text = "🟠 هذا هو آخر عنصر: " .. item.Name
 	end
 end
 
@@ -126,7 +128,6 @@ local function autoBuyItem(item)
 		local now = os.time()
 
 		print("📦 Preparing to buy:", itemId, "Qty:", quantity or "?", "Release:", releaseTime or "N/A")
-
 		updateStatus(item)
 
 		if not quantity or quantity >= 50 then
