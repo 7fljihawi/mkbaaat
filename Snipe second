@@ -1,0 +1,203 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local player = Players.LocalPlayer
+
+local Marketplace = ReplicatedStorage:WaitForChild("Marketplace")
+
+local MarketService = ReplicatedStorage:WaitForChild("Packages")
+	:WaitForChild("_Index")
+	:WaitForChild("sleitnick_knit@1.4.7")
+	:WaitForChild("knit")
+	:WaitForChild("Services")
+	:WaitForChild("MarketService")
+
+local BuyRF = MarketService:WaitForChild("RF"):WaitForChild("Buy")
+local ItemRefreshed = MarketService:WaitForChild("RE"):WaitForChild("ItemRefreshed")
+
+-- 🛡️ UserId التحقق
+local allowedUserIds = {
+	[7785950571] = true,
+	[1394697627] = true,
+	[3859777415] = true,
+	[2599550082] = true,
+	[1263973763] = true,
+}
+
+if not allowedUserIds[player.UserId] then
+	warn("❌ You are not allowed to use this script.")
+	return
+end
+
+local snipingEnabled = true
+local lastItemId = nil
+
+-- === GUI ===
+local playerGui = player:WaitForChild("PlayerGui")
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "SnipeSettingsGUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 100, 0, 35)
+toggleButton.Position = UDim2.new(0, 10, 0, 160)
+toggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+toggleButton.Text = "👁 إظهار القائمة"
+toggleButton.Font = Enum.Font.Gotham
+toggleButton.TextSize = 14
+toggleButton.Parent = screenGui
+Instance.new("UICorner", toggleButton).CornerRadius = UDim.new(0, 6)
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 220, 0, 140)
+mainFrame.Position = UDim2.new(0, 10, 0, 10)
+mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+mainFrame.BorderSizePixel = 0
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
+
+toggleButton.MouseButton1Click:Connect(function()
+	mainFrame.Visible = not mainFrame.Visible
+	toggleButton.Text = mainFrame.Visible and "🔒 إخفاء القائمة" or "👁 إظهار القائمة"
+end)
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -20, 0, 30)
+titleLabel.Position = UDim2.new(0, 10, 0, 5)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Snipe Script"
+titleLabel.TextColor3 = Color3.new(1, 1, 1)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 18
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = mainFrame
+
+local autoSnipeButton = Instance.new("TextButton")
+autoSnipeButton.Size = UDim2.new(1, -20, 0, 35)
+autoSnipeButton.Position = UDim2.new(0, 10, 0, 40)
+autoSnipeButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+autoSnipeButton.TextColor3 = Color3.new(1, 1, 1)
+autoSnipeButton.Text = "✔ Auto Snipe: ON"
+autoSnipeButton.Font = Enum.Font.GothamBold
+autoSnipeButton.TextSize = 16
+autoSnipeButton.Parent = mainFrame
+Instance.new("UICorner", autoSnipeButton).CornerRadius = UDim.new(0, 6)
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, -20, 0, 35)
+statusLabel.Position = UDim2.new(0, 10, 0, 80)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "⚪️ لا يوجد عنصر بعد"
+statusLabel.TextColor3 = Color3.new(1, 1, 1)
+statusLabel.Font = Enum.Font.GothamBold
+statusLabel.TextSize = 16
+statusLabel.TextWrapped = true
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Parent = mainFrame
+
+autoSnipeButton.MouseButton1Click:Connect(function()
+	snipingEnabled = not snipingEnabled
+	autoSnipeButton.Text = snipingEnabled and "✔ Auto Snipe: ON" or "✘ Auto Snipe: OFF"
+	autoSnipeButton.TextColor3 = snipingEnabled and Color3.new(1, 1, 1) or Color3.fromRGB(150, 150, 150)
+end)
+
+local function updateStatus(item)
+	if not item then
+		statusLabel.Text = "⚪️ لا يوجد عنصر"
+		return
+	end
+	if lastItemId ~= item.Name then
+		statusLabel.Text = "🟢 عنصر جديد: " .. item.Name
+		lastItemId = item.Name
+	else
+		statusLabel.Text = "🔚 هذا هو آخر عنصر"
+	end
+end
+
+-- 🔁 autoBuyItem
+local function autoBuyItem(item)
+	if not snipingEnabled then return end
+	task.spawn(function()
+		local itemId = item.Name
+		local releaseTime = tonumber(item:GetAttribute("releaseTime"))
+		local quantity = tonumber(item:GetAttribute("quantity"))
+		local now = os.time()
+
+		print("📦 Preparing to buy:", itemId, "Qty:", quantity or "?", "Release:", releaseTime or "N/A")
+
+		updateStatus(item)
+
+		if not quantity or quantity >= 50 then
+			print("❌ Skipping:", itemId, "(quantity too high:", quantity or "nil", ")")
+			return
+		end
+
+		if releaseTime and now < releaseTime then
+			print("⏳ Waiting until release:", itemId)
+			while os.time() < releaseTime do task.wait(0.1) end
+		end
+
+		local bought = 0
+		while bought < 4 and snipingEnabled do
+			local success, result = pcall(function()
+				return BuyRF:InvokeServer(itemId)
+			end)
+			if success then
+				bought += 1
+				print("✅ Bought:", itemId, "Attempt:", bought)
+				task.wait(1.3)
+			else
+				warn("❌ Failed:", result)
+				task.wait(0.1)
+			end
+		end
+	end)
+end
+
+-- 🟢 Marketplace مراقبة
+Marketplace.ChildAdded:Connect(function(item)
+	print("🟢 New Item Detected:", item.Name)
+	updateStatus(item)
+	autoBuyItem(item)
+end)
+
+-- 🔄 Refreshed
+ItemRefreshed.OnClientEvent:Connect(function(itemId)
+	print("🔄 Item Refreshed:", itemId)
+	local item = Marketplace:FindFirstChild(itemId)
+	if not item then task.wait(0.2); item = Marketplace:FindFirstChild(itemId) end
+	updateStatus(item)
+	autoBuyItem(item)
+end)
+
+-- عند الدخول: آخر عنصر
+local lastItem, lastTime = nil, -math.huge
+for _, itm in ipairs(Marketplace:GetChildren()) do
+	local rt = tonumber(itm:GetAttribute("releaseTime"))
+	if rt and rt > lastTime then
+		lastItem, lastTime = itm, rt
+	end
+end
+if lastItem then
+	print("🟢 Buying last item at join:", lastItem.Name)
+	updateStatus(lastItem)
+	autoBuyItem(lastItem)
+else
+	print("❌ No item at join")
+end
+
+-- 💤 Anti-AFK
+task.spawn(function()
+	while true do
+		task.wait(300)
+		if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+			local root = player.Character.HumanoidRootPart
+			local orig = root.Position
+			root.CFrame = root.CFrame + Vector3.new(0, 0, 1)
+			task.wait(0.1)
+			root.CFrame = CFrame.new(orig)
+		end
+	end
+end)
