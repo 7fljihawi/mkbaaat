@@ -16,6 +16,7 @@ local ItemRefreshed = MarketService:WaitForChild("RE"):WaitForChild("ItemRefresh
 
 local allowedUserIds = {
 	[1701401032] = true,
+        [7785950571] = true,
 	[1394697627] = true,
 	[3859777415] = true,
 	[2599550082] = true,
