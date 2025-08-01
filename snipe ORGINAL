@@ -112,7 +112,7 @@ local function updateStatus(item)
 		statusLabel.Text = "🟢 عنصر جديد: " .. item.Name
 		lastItemId = item.Name
 	else
-		statusLabel.Text = "🔚 هذا هو آخر عنصر"
+		statusLabel.Text = " هذا هو آخر عنصر"
 	end
 end
 
@@ -122,7 +122,7 @@ local function autoBuyItem(item)
 	task.spawn(function()
 		local itemId = item.Name
 		local releaseTime = tonumber(item:GetAttribute("releaseTime"))
-		local quantity = tonumber(item:GetAttribute("quantity"))
+		local quantity = tonumber(item:GetAttribute("quantitySold"))
 		local now = os.time()
 
 		print("📦 Preparing to buy:", itemId, "Qty:", quantity or "?", "Release:", releaseTime or "N/A")
