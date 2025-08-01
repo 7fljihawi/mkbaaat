@@ -83,7 +83,7 @@ local function autoBuyItem(item)
 		end
 
 		local bought = 0
-		while bought < 4 and snipingEnabled do
+		while bought < 5 and snipingEnabled do
 			local success, result = pcall(function()
 				return BuyRF:InvokeServer(itemId)
 			end)
