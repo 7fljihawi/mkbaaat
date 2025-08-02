@@ -78,7 +78,7 @@ local function autoBuyItem(item)
 			return
 		end
 
-		if quantity and quantity >= 30 then
+		if quantity and quantity >= 36 then
 			print("❌ Skipping:", itemId, "(Too much quantity:", quantity, ")")
 			return
 		end
