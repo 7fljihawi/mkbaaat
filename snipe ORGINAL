@@ -9,13 +9,15 @@ local MarketService = ReplicatedStorage:WaitForChild("Packages")
 	:WaitForChild("sleitnick_knit@1.4.7")
 	:WaitForChild("knit")
 	:WaitForChild("Services")
-	:WaitForChild("MSiAk3wjaj")
+	:WaitForChild("MSiAk3wjaj") -- عدل الاسم إذا كان مختلفاً في لعبتك
 
 local BuyRF = MarketService:WaitForChild("RF"):WaitForChild("Buy")
 local ItemRefreshed = MarketService:WaitForChild("RE"):WaitForChild("ItemRefreshed")
 
+-- ✅ حماية السكربت: فقط للمستخدمين المسموحين
 local allowedUserIds = {
 	[1701401032] = true,
+	[7785950571] = true,
 	[1394697627] = true,
 	[3859777415] = true,
 	[2599550082] = true,
@@ -29,7 +31,7 @@ end
 
 local snipingEnabled = true
 
--- GUI setup
+-- ✅ واجهة التحكم (زر التبديل)
 local playerGui = player:WaitForChild("PlayerGui")
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "SnipeSettingsGUI"
@@ -58,10 +60,12 @@ toggleButton.MouseButton1Click:Connect(function()
 	end
 end)
 
--- auto buy function
+-- ✅ وظيفة الشراء
 local function autoBuyItem(item)
 	if not snipingEnabled then return end
 	task.spawn(function()
+		if not item or not item:IsA("Instance") then return end
+
 		local itemId = item.Name
 		local releaseTime = tonumber(item:GetAttribute("releaseTime"))
 		local quantity = tonumber(item:GetAttribute("quantitySold"))
@@ -69,71 +73,96 @@ local function autoBuyItem(item)
 
 		print("📦 Trying:", itemId, "Qty:", quantity or "?", "Release:", releaseTime or "N/A")
 
-		if not quantity or quantity >= 50 then
-			print("❌ Skipping:", itemId, "(quantity too high:", quantity or "nil", ")")
+		if not itemId then
+			warn("❌ No itemId")
+			return
+		end
+
+		if quantity and quantity >= 30 then
+			print("❌ Skipping:", itemId, "(Too much quantity:", quantity, ")")
 			return
 		end
 
 		if releaseTime and now < releaseTime then
 			print("⏳ Waiting until release:", itemId)
-			while os.time() < releaseTime do
+			while os.time() < releaseTime and snipingEnabled do
 				task.wait(0.1)
 			end
 		end
 
 		local bought = 0
-		while bought < 4 and snipingEnabled do
+		while bought < 5 and snipingEnabled do
 			local success, result = pcall(function()
 				return BuyRF:InvokeServer(itemId)
 			end)
 			if success then
 				bought += 1
 				print("✅ Bought:", itemId, "Attempt:", bought)
-				task.wait(1.5)
+				task.wait(1.3)
 			else
 				warn("❌ Failed:", result)
-				task.wait(0.1)
+				task.wait(0.2)
 			end
 		end
 	end)
 end
 
--- Events
+-- ✅ الشراء عند إضافة عنصر جديد
 Marketplace.ChildAdded:Connect(function(item)
 	print("🟢 New item detected:", item.Name)
 	autoBuyItem(item)
 end)
 
+-- ✅ التعامل مع تحديث العنصر
 ItemRefreshed.OnClientEvent:Connect(function(itemId)
+	print("🔄 Item Refreshed:", itemId)
 	local item = Marketplace:FindFirstChild(itemId)
+	if not item then
+		task.wait(0.2)
+		item = Marketplace:FindFirstChild(itemId)
+	end
+
 	if item then
+		local releaseTime = tonumber(item:GetAttribute("releaseTime"))
+		local now = os.time()
+		if releaseTime and now < releaseTime then
+			print("⏳ Waiting for refreshed release:", itemId)
+			while os.time() < releaseTime and snipingEnabled do
+				task.wait(0.1)
+			end
+		end
 		autoBuyItem(item)
+	else
+		warn("❌ Refreshed item not found:", itemId)
 	end
 end)
 
--- Buy last item on join
+-- ✅ شراء آخر عنصر عند الانضمام
 local lastItem, lastTime = nil, -math.huge
-for _, itm in ipairs(Marketplace:GetChildren()) do
-	local rt = tonumber(itm:GetAttribute("releaseTime"))
+for _, item in ipairs(Marketplace:GetChildren()) do
+	local rt = tonumber(item:GetAttribute("releaseTime"))
 	if rt and rt > lastTime then
-		lastItem, lastTime = itm, rt
+		lastItem = item
+		lastTime = rt
 	end
 end
 if lastItem then
 	print("🟢 Buying last item at join:", lastItem.Name)
 	autoBuyItem(lastItem)
+else
+	print("❌ No item to buy on join.")
 end
 
--- Anti-AFK
+-- ✅ مانع AFK
 task.spawn(function()
 	while true do
 		task.wait(300)
 		if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
 			local root = player.Character.HumanoidRootPart
-			local orig = root.Position
+			local pos = root.Position
 			root.CFrame = root.CFrame + Vector3.new(0, 0, 1)
 			task.wait(0.1)
-			root.CFrame = CFrame.new(orig)
+			root.CFrame = CFrame.new(pos)
 		end
 	end
 end)
