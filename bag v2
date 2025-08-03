@@ -1,0 +1,123 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Marketplace = ReplicatedStorage:WaitForChild("Marketplace")
+
+local MarketService = ReplicatedStorage:WaitForChild("Packages")
+	:WaitForChild("_Index")
+	:WaitForChild("sleitnick_knit@1.4.7")
+	:WaitForChild("knit")
+	:WaitForChild("Services")
+	:WaitForChild("MSiAk3wjaj")
+
+local BuyRF = MarketService:WaitForChild("RF"):WaitForChild("Buy")
+local ItemRefreshed = MarketService:WaitForChild("RE"):WaitForChild("ItemRefreshed")
+
+-- دالة الشراء
+local function autoBuyItem(item)
+	task.spawn(function()
+		local itemId = item.Name
+		local releaseTime = tonumber(item:GetAttribute("releaseTime"))
+		local now = os.time()
+
+		print("📦 Trying:", itemId, "Release:", releaseTime, "Now:", now)
+
+		if not itemId then
+			warn("❌ No itemId")
+			return
+		end
+
+		if releaseTime and now < releaseTime then
+			print("⏳ Waiting until release:", itemId)
+			while os.time() < releaseTime do
+				task.wait(0.1)
+			end
+		end
+
+		local bought = 0
+		while bought < 61 do
+			local success, result = pcall(function()
+				return BuyRF:InvokeServer(itemId)
+			end)
+
+			if success then
+				bought += 1
+				print("✅ Bought:", itemId, "Attempt:", bought)
+				task.wait(0.1)
+			else
+				warn("❌ Failed:", result)
+				task.wait(0.1)
+			end
+		end
+	end)
+end
+
+-- يشتري أي أيتم جديد
+Marketplace.ChildAdded:Connect(function(item)
+	print("🟢 New Item Detected:", item.Name)
+	autoBuyItem(item)
+end)
+
+-- يشتري عند التحديث مع انتظار لو مو جاهز
+ItemRefreshed.OnClientEvent:Connect(function(itemId)
+	print("🔄 Item Refreshed:", itemId)
+	local item = Marketplace:FindFirstChild(itemId)
+
+	if not item then
+		task.wait(0.2)
+		item = Marketplace:FindFirstChild(itemId)
+	end
+
+	if item then
+		local releaseTime = tonumber(item:GetAttribute("releaseTime"))
+		local now = os.time()
+		if releaseTime and now < releaseTime then
+			print("⏳ Waiting for refreshed release:", itemId)
+			while os.time() < releaseTime do
+				task.wait(0.1)
+			end
+		end
+		autoBuyItem(item)
+	else
+		warn("❌ Refreshed Item not found:", itemId)
+	end
+end)
+
+-- شراء آخر أيتم عند الدخول
+local lastItem = nil
+local lastTime = -math.huge
+
+for _, item in Marketplace:GetChildren() do
+	local releaseTime = tonumber(item:GetAttribute("releaseTime"))
+	if releaseTime and releaseTime > lastTime then
+		lastItem = item
+		lastTime = releaseTime
+	end
+end
+
+if lastItem then
+	print("🟢 Buying last item at join:", lastItem.Name)
+	autoBuyItem(lastItem)
+else
+	print("❌ No item at join")
+end
+
+-- 🛡️ Anti-AFK: تحريك اللاعب كل 5 دقائق
+task.spawn(function()
+	while true do
+		task.wait(300) -- 5 دقائق = 300 ثانية
+
+		local player = Players.LocalPlayer
+		if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+			local root = player.Character.HumanoidRootPart
+			local originalPos = root.Position
+			root.CFrame = root.CFrame + Vector3.new(0, 0, 1)
+			task.wait(0.1)
+			root.CFrame = CFrame.new(originalPos)
+			print("🚶 Anti-AFK movement done")
+		else
+			warn("❌ Cannot move player for Anti-AFK")
+		end
+	end
+end)
+
