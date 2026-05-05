@@ -1,7 +1,8 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local player = Players.LocalPlayer
+local TeleportService = game:GetService("TeleportService")
 
+local player = Players.LocalPlayer
 local Marketplace = ReplicatedStorage:WaitForChild("Marketplace")
 
 local MarketService = ReplicatedStorage:WaitForChild("Packages")
@@ -9,12 +10,12 @@ local MarketService = ReplicatedStorage:WaitForChild("Packages")
 	:WaitForChild("sleitnick_knit@1.4.7")
 	:WaitForChild("knit")
 	:WaitForChild("Services")
-	:WaitForChild("MarketService") -- عدل الاسم إذا كان مختلفاً في لعبتك
+	:WaitForChild("MarketService")
 
 local BuyRF = MarketService:WaitForChild("RF"):WaitForChild("Buy")
 local ItemRefreshed = MarketService:WaitForChild("RE"):WaitForChild("ItemRefreshed")
 
--- ✅ حماية السكربت: فقط للمستخدمين المسموحين
+-- ✅ Whitelist
 local allowedUserIds = {
 	[1701401032] = true,
 	[7785950571] = true,
@@ -22,17 +23,47 @@ local allowedUserIds = {
 	[3859777415] = true,
 	[2599550082] = true,
 	[1263973763] = true,
-    [7254672199] = true,
+	[7254672199] = true,
 }
 
 if not allowedUserIds[player.UserId] then
-	warn("❌ You are not allowed to use this script.")
+	warn("❌ Not allowed")
 	return
 end
 
 local snipingEnabled = true
 
--- ✅ واجهة التحكم (زر التبديل)
+-- 🔁 Rejoin Settings
+local REJOIN_TIME = 1020 
+
+local function rejoin()
+	task.wait(2)
+	TeleportService:Teleport(game.PlaceId, player)
+end
+
+-- 🔁 Rejoin عند error
+game.CoreGui.RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(child)
+	if child.Name == "ErrorPrompt" then
+		rejoin()
+	end
+end)
+
+-- 🔁 Rejoin إلا teleport فشل
+player.OnTeleport:Connect(function(state)
+	if state == Enum.TeleportState.Failed then
+		rejoin()
+	end
+end)
+
+-- ⏱ Rejoin كل مدة
+task.spawn(function()
+	while true do
+		task.wait(REJOIN_TIME)
+		rejoin()
+	end
+end)
+
+-- GUI
 local playerGui = player:WaitForChild("PlayerGui")
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "SnipeSettingsGUI"
@@ -48,22 +79,17 @@ toggleButton.Text = "✔ Auto Snipe: ON"
 toggleButton.Font = Enum.Font.GothamBold
 toggleButton.TextSize = 16
 toggleButton.Parent = screenGui
-Instance.new("UICorner", toggleButton).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", toggleButton)
 
 toggleButton.MouseButton1Click:Connect(function()
 	snipingEnabled = not snipingEnabled
-	if snipingEnabled then
-		toggleButton.Text = "✔ Auto Snipe: ON"
-		toggleButton.TextColor3 = Color3.new(1, 1, 1)
-	else
-		toggleButton.Text = "✘ Auto Snipe: OFF"
-		toggleButton.TextColor3 = Color3.fromRGB(150, 150, 150)
-	end
+	toggleButton.Text = snipingEnabled and "✔ Auto Snipe: ON" or "✘ Auto Snipe: OFF"
 end)
 
--- ✅ وظيفة الشراء
+-- 🔥 BUY LOGIC
 local function autoBuyItem(item)
 	if not snipingEnabled then return end
+
 	task.spawn(function()
 		if not item or not item:IsA("Instance") then return end
 
@@ -72,51 +98,38 @@ local function autoBuyItem(item)
 		local quantity = tonumber(item:GetAttribute("totalQuantity"))
 		local now = os.time()
 
-		print("📦 Trying:", itemId, "Qty:", quantity or "?", "Release:", releaseTime or "N/A")
-
-		if not itemId then
-			warn("❌ No itemId")
-			return
-		end
-
-		if quantity and quantity >= 100 then
-			print("❌ Skipping:", itemId, "(Too much quantity:", quantity, ")")
-			return
-		end
+		if quantity and quantity >= 100 then return end
 
 		if releaseTime and now < releaseTime then
-			print("⏳ Waiting until release:", itemId)
 			while os.time() < releaseTime and snipingEnabled do
 				task.wait(0.03)
 			end
 		end
 
 		local bought = 0
+
 		while bought < 5 and snipingEnabled do
 			local success, result = pcall(function()
 				return BuyRF:InvokeServer(itemId)
 			end)
+
 			if success then
 				bought += 1
-				print("✅ Bought:", itemId, "Attempt:", bought)
 				task.wait(1.3)
 			else
-				warn("❌ Failed:", result)
 				task.wait(0.03)
 			end
 		end
 	end)
 end
 
--- ✅ الشراء عند إضافة عنصر جديد
+-- 📦 ChildAdded
 Marketplace.ChildAdded:Connect(function(item)
-	print("🟢 New item detected:", item.Name)
 	autoBuyItem(item)
 end)
 
--- ✅ التعامل مع تحديث العنصر
+-- 🔄 ItemRefreshed
 ItemRefreshed.OnClientEvent:Connect(function(itemId)
-	print("🔄 Item Refreshed:", itemId)
 	local item = Marketplace:FindFirstChild(itemId)
 	if not item then
 		task.wait(0.2)
@@ -124,21 +137,11 @@ ItemRefreshed.OnClientEvent:Connect(function(itemId)
 	end
 
 	if item then
-		local releaseTime = tonumber(item:GetAttribute("releaseTime"))
-		local now = os.time()
-		if releaseTime and now < releaseTime then
-			print("⏳ Waiting for refreshed release:", itemId)
-			while os.time() < releaseTime and snipingEnabled do
-				task.wait(0.1)
-			end
-		end
 		autoBuyItem(item)
-	else
-		warn("❌ Refreshed item not found:", itemId)
 	end
 end)
 
--- ✅ شراء آخر عنصر عند الانضمام
+-- 🟢 Buy last item
 local lastItem, lastTime = nil, -math.huge
 for _, item in ipairs(Marketplace:GetChildren()) do
 	local rt = tonumber(item:GetAttribute("releaseTime"))
@@ -147,14 +150,12 @@ for _, item in ipairs(Marketplace:GetChildren()) do
 		lastTime = rt
 	end
 end
+
 if lastItem then
-	print("🟢 Buying last item at join:", lastItem.Name)
 	autoBuyItem(lastItem)
-else
-	print("❌ No item to buy on join.")
 end
 
--- anti afk
+-- 💤 Anti AFK
 local VirtualUser = game:GetService("VirtualUser")
 
 player.Idled:Connect(function()
