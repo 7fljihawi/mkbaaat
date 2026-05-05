@@ -70,7 +70,7 @@ local function autoBuyItem(item)
 		local releaseTime = tonumber(item:GetAttribute("releaseTime"))
 		local quantity = tonumber(item:GetAttribute("totalQuantity"))
 
-		if quantity and quantity >= 100 then
+		if quantity and quantity >= 1000000 then
 			activeItems[item] = nil
 			return
 		end
