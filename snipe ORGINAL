@@ -9,7 +9,7 @@ local MarketService = ReplicatedStorage:WaitForChild("Packages")
 	:WaitForChild("sleitnick_knit@1.4.7")
 	:WaitForChild("knit")
 	:WaitForChild("Services")
-	:WaitForChild("MSiAk3wjaj") -- عدل الاسم إذا كان مختلفاً في لعبتك
+	:WaitForChild("MarketService") -- عدل الاسم إذا كان مختلفاً في لعبتك
 
 local BuyRF = MarketService:WaitForChild("RF"):WaitForChild("Buy")
 local ItemRefreshed = MarketService:WaitForChild("RE"):WaitForChild("ItemRefreshed")
