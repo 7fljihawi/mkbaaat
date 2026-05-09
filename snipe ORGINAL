@@ -68,7 +68,7 @@ local function autoBuyItem(item)
 
 		local itemId = item.Name
 		local releaseTime = tonumber(item:GetAttribute("releaseTime"))
-		local quantity = tonumber(item:GetAttribute("Totalquantity"))
+		local quantity = tonumber(item:GetAttribute("totalQuantity"))
 		local now = os.time()
 
 		print("📦 Trying:", itemId, "Qty:", quantity or "?", "Release:", releaseTime or "N/A")
