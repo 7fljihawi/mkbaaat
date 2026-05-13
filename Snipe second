@@ -39,7 +39,7 @@ local allowedUserIds = {
 }
 
 if not allowedUserIds[player.UserId] then
-	warn("â Not allowed.")
+	warn("❌ Not allowed.")
 	return
 end
 
@@ -62,14 +62,14 @@ button.BackgroundColor3 = Color3.fromRGB(25,25,25)
 button.TextColor3 = Color3.new(1,1,1)
 button.Font = Enum.Font.GothamBold
 button.TextSize = 15
-button.Text = "â¡ BALANCED : ON"
+button.Text = "⚡ BALANCED : ON"
 button.Parent = gui
 
 Instance.new("UICorner", button)
 
 button.MouseButton1Click:Connect(function()
 	ENABLED = not ENABLED
-	button.Text = ENABLED and "â¡ BALANCED : ON" or "â BALANCED : OFF"
+	button.Text = ENABLED and "⚡ BALANCED : ON" or "⛔ BALANCED : OFF"
 end)
 
 --// Cache
@@ -87,15 +87,22 @@ local function spamBuy(itemId)
 		task.spawn(function()
 
 			for i = 1, MAX_BUYS do
+				
 				if not ENABLED then
 					break
+				end
+
+				-- random delay غير لأول جوج buys
+				if i <= 2 then
+					local randomDelay = math.random(3,30) / 1000
+					task.wait(randomDelay)
 				end
 
 				pcall(function()
 					BuyRF:InvokeServer(itemId)
 				end)
 
-				-- ~6s on 60 FPS
+				-- heartbeat delay
 				for _ = 1, 4 do
 					RunService.Heartbeat:Wait()
 				end
@@ -191,4 +198,4 @@ player.Idled:Connect(function()
 	VirtualUser:Button2Up(Vector2.zero, workspace.CurrentCamera.CFrame)
 end)
 
-print("â¡ Optimized Balanced Sniper Loaded")
+print("⚡ Optimized Balanced Sniper Loaded")
