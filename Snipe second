@@ -94,7 +94,7 @@ local function spamBuy(itemId)
 
 				-- random delay غير لأول جوج buys
 				if i <= 2 then
-					local randomDelay = math.random(3,30) / 1000
+					local randomDelay = math.random(20,80) / 1000
 					task.wait(randomDelay)
 				end
 
