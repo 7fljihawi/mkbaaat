@@ -127,18 +127,27 @@ local function handleItem(item)
 		return
 	end
 
-	-- 4 random sold targets
+	-- 4 random sold targets بدون تكرار
 	if quantity and sold then
 
 		if not randomTargets[itemId] then
-			randomTargets[itemId] = {
-				math.random(2, quantity),
-				math.random(2, quantity),
-				math.random(2, quantity),
-				math.random(2, quantity)
-			}
 
-			table.sort(randomTargets[itemId])
+			local used = {}
+			local targets = {}
+
+			while #targets < 4 do
+
+				local num = math.random(2, quantity)
+
+				if not used[num] then
+					used[num] = true
+					table.insert(targets, num)
+				end
+			end
+
+			table.sort(targets)
+
+			randomTargets[itemId] = targets
 		end
 
 		local allowed = false
