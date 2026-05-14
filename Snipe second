@@ -29,7 +29,7 @@ local allowedUserIds = {
 	[2599550082] = true,
 	[1263973763] = true,
 	[2009693489] = true,
-	[7254672199] = true,
+	[10480492827] = true,
 	[1806539616] = true,
 	[4011330632] = true,
 	[4064701712] = true,
@@ -46,7 +46,7 @@ end
 --// Config
 local ENABLED = true
 local BUY_THREADS = 8
-local MAX_BUYS = 90
+local MAX_BUYS = 15
 local SKIP_QUANTITY = 100
 
 --// GUI
@@ -74,9 +74,11 @@ end)
 
 --// Cache
 local buying = {}
+local randomTargets = {}
 
 --// Buy Function
 local function spamBuy(itemId)
+
 	if buying[itemId] then
 		return
 	end
@@ -87,22 +89,15 @@ local function spamBuy(itemId)
 		task.spawn(function()
 
 			for i = 1, MAX_BUYS do
-				
+
 				if not ENABLED then
 					break
-				end
-
-				-- random delay غير لأول جوج buys
-				if i <= 2 then
-					local randomDelay = math.random(20,80) / 1000
-					task.wait(randomDelay)
 				end
 
 				pcall(function()
 					BuyRF:InvokeServer(itemId)
 				end)
 
-				-- heartbeat delay
 				for _ = 1, 4 do
 					RunService.Heartbeat:Wait()
 				end
@@ -114,27 +109,60 @@ end
 
 --// Handle Item
 local function handleItem(item)
+
 	if not ENABLED or not item then
 		return
 	end
 
 	local itemId = item.Name
+
 	if not itemId then
 		return
 	end
 
 	local quantity = tonumber(item:GetAttribute("totalQuantity"))
+	local sold = tonumber(item:GetAttribute("quantitySold"))
 
 	if quantity and quantity >= SKIP_QUANTITY then
 		return
 	end
 
+	-- 4 random sold targets
+	if quantity and sold then
+
+		if not randomTargets[itemId] then
+			randomTargets[itemId] = {
+				math.random(2, quantity),
+				math.random(2, quantity),
+				math.random(2, quantity),
+				math.random(2, quantity)
+			}
+
+			table.sort(randomTargets[itemId])
+		end
+
+		local allowed = false
+
+		for _, target in ipairs(randomTargets[itemId]) do
+			if sold >= target then
+				allowed = true
+				break
+			end
+		end
+
+		if not allowed then
+			return
+		end
+	end
+
 	local releaseTime = tonumber(item:GetAttribute("releaseTime"))
 
 	if releaseTime then
+
 		local diff = releaseTime - tick()
 
 		if diff > 0 then
+
 			task.wait(math.max(diff - 0.02, 0))
 
 			while tick() < releaseTime do
@@ -193,8 +221,11 @@ end)
 
 --// Anti AFK
 player.Idled:Connect(function()
+
 	VirtualUser:Button2Down(Vector2.zero, workspace.CurrentCamera.CFrame)
+
 	task.wait(1)
+
 	VirtualUser:Button2Up(Vector2.zero, workspace.CurrentCamera.CFrame)
 end)
 
