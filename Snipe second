@@ -46,7 +46,7 @@ end
 --// Config
 local ENABLED = true
 local BUY_THREADS = 8
-local MAX_BUYS = 90
+local MAX_BUYS = 120
 local SKIP_QUANTITY = 100
 
 --// GUI
