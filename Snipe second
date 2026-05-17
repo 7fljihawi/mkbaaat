@@ -196,5 +196,3 @@ VirtualUser:Button2Up(Vector2.zero, workspace.CurrentCamera.CFrame)
 end)
 
 print("â¡ Optimized Balanced Sniper Loaded")
-
-“I can add what # i want or random ?”
