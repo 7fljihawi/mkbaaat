@@ -135,9 +135,9 @@ local function handleItem(item)
 			local used = {}
 			local targets = {}
 
-			while #targets < 4 do
+			while #targets < 8 do
 
-				local num = math.random(2, quantity)
+				local num = math.random(0, quantity)
 
 				if not used[num] then
 					used[num] = true
