@@ -11,42 +11,42 @@ local player = Players.LocalPlayer
 local Marketplace = ReplicatedStorage:WaitForChild("Marketplace")
 
 local MarketService = ReplicatedStorage:WaitForChild("Packages")
-	:WaitForChild("_Index")
-	:WaitForChild("sleitnick_knit@1.4.7")
-	:WaitForChild("knit")
-	:WaitForChild("Services")
-	:WaitForChild("MarketService")
+:WaitForChild("_Index")
+:WaitForChild("sleitnick_knit@1.4.7")
+:WaitForChild("knit")
+:WaitForChild("Services")
+:WaitForChild("MarketService")
 
 local BuyRF = MarketService.RF.Buy
 local ItemRefreshed = MarketService.RE.ItemRefreshed
 
 --// Allowed Users
 local allowedUserIds = {
-	[1701401032] = true,
-	[7785950571] = true,
-	[1394697627] = true,
-	[3859777415] = true,
-	[2599550082] = true,
-	[1263973763] = true,
-	[2009693489] = true,
-	[4196348518] = true,
-	[1806539616] = true,
-	[4011330632] = true,
-	[4064701712] = true,
-	[1930502805] = true,
-	[3508676262] = true,
-	[2442275255] = true,
+[1701401032] = true,
+[7785950571] = true,
+[1394697627] = true,
+[3859777415] = true,
+[2599550082] = true,
+[1263973763] = true,
+[2009693489] = true,
+[10480492827] = true,
+[1806539616] = true,
+[4011330632] = true,
+[4064701712] = true,
+[1930502805] = true,
+[3508676262] = true,
+[2442275255] = true,
 }
 
 if not allowedUserIds[player.UserId] then
-	warn("❌ Not allowed.")
-	return
+warn("â Not allowed.")
+return
 end
 
 --// Config
 local ENABLED = true
 local BUY_THREADS = 8
-local MAX_BUYS = 120
+local MAX_BUYS = 90
 local SKIP_QUANTITY = 100
 
 --// GUI
@@ -62,125 +62,83 @@ button.BackgroundColor3 = Color3.fromRGB(25,25,25)
 button.TextColor3 = Color3.new(1,1,1)
 button.Font = Enum.Font.GothamBold
 button.TextSize = 15
-button.Text = "⚡ BALANCED : ON"
+button.Text = "â¡ BALANCED : ON"
 button.Parent = gui
 
 Instance.new("UICorner", button)
 
 button.MouseButton1Click:Connect(function()
-	ENABLED = not ENABLED
-	button.Text = ENABLED and "⚡ BALANCED : ON" or "⛔ BALANCED : OFF"
+ENABLED = not ENABLED
+button.Text = ENABLED and "â¡ BALANCED : ON" or "â BALANCED : OFF"
 end)
 
 --// Cache
 local buying = {}
-local randomTargets = {}
 
 --// Buy Function
 local function spamBuy(itemId)
+if buying[itemId] then
+return
+end
 
-	if buying[itemId] then
-		return
-	end
+buying[itemId] = true  
 
-	buying[itemId] = true
+for thread = 1, BUY_THREADS do  
+	task.spawn(function()  
 
-	for thread = 1, BUY_THREADS do
-		task.spawn(function()
+		for i = 1, MAX_BUYS do  
+			if not ENABLED then  
+				break  
+			end  
 
-			for i = 1, MAX_BUYS do
+			pcall(function()  
+				BuyRF:InvokeServer(itemId)  
+			end)  
 
-				if not ENABLED then
-					break
-				end
+			-- ~6s on 60 FPS  
+			for _ = 1, 4 do  
+				RunService.Heartbeat:Wait()  
+			end  
+		end  
 
-				pcall(function()
-					BuyRF:InvokeServer(itemId)
-				end)
+	end)  
+end
 
-				for _ = 1, 4 do
-					RunService.Heartbeat:Wait()
-				end
-			end
-
-		end)
-	end
 end
 
 --// Handle Item
 local function handleItem(item)
+if not ENABLED or not item then
+return
+end
 
-	if not ENABLED or not item then
-		return
-	end
+local itemId = item.Name  
+if not itemId then  
+	return  
+end  
 
-	local itemId = item.Name
+local quantity = tonumber(item:GetAttribute("totalQuantity"))  
 
-	if not itemId then
-		return
-	end
+if quantity and quantity >= SKIP_QUANTITY then  
+	return  
+end  
 
-	local quantity = tonumber(item:GetAttribute("totalQuantity"))
-	local sold = tonumber(item:GetAttribute("quantitySold"))
+local releaseTime = tonumber(item:GetAttribute("releaseTime"))  
 
-	if quantity and quantity >= SKIP_QUANTITY then
-		return
-	end
+if releaseTime then  
+	local diff = releaseTime - tick()  
 
-	-- 4 random sold targets بدون تكرار
-	if quantity and sold then
+	if diff > 0 then  
+		task.wait(math.max(diff - 0.02, 0))  
 
-		if not randomTargets[itemId] then
+		while tick() < releaseTime do  
+			RunService.Heartbeat:Wait()  
+		end  
+	end  
+end  
 
-			local used = {}
-			local targets = {}
+spamBuy(itemId)
 
-			while #targets < 8 do
-
-				local num = math.random(0, quantity)
-
-				if not used[num] then
-					used[num] = true
-					table.insert(targets, num)
-				end
-			end
-
-			table.sort(targets)
-
-			randomTargets[itemId] = targets
-		end
-
-		local allowed = false
-
-		for _, target in ipairs(randomTargets[itemId]) do
-			if sold >= target then
-				allowed = true
-				break
-			end
-		end
-
-		if not allowed then
-			return
-		end
-	end
-
-	local releaseTime = tonumber(item:GetAttribute("releaseTime"))
-
-	if releaseTime then
-
-		local diff = releaseTime - tick()
-
-		if diff > 0 then
-
-			task.wait(math.max(diff - 0.02, 0))
-
-			while tick() < releaseTime do
-				RunService.Heartbeat:Wait()
-			end
-		end
-	end
-
-	spamBuy(itemId)
 end
 
 --// New Items
@@ -189,53 +147,54 @@ Marketplace.ChildAdded:Connect(handleItem)
 --// Refreshed Items
 ItemRefreshed.OnClientEvent:Connect(function(itemId)
 
-	-- fix Instance/string issue
-	if typeof(itemId) == "Instance" then
-		itemId = itemId.Name
-	end
+-- fix Instance/string issue  
+if typeof(itemId) == "Instance" then  
+	itemId = itemId.Name  
+end  
 
-	local item = Marketplace:FindFirstChild(itemId)
+local item = Marketplace:FindFirstChild(itemId)  
 
-	if not item then
-		repeat
-			RunService.Heartbeat:Wait()
-			item = Marketplace:FindFirstChild(itemId)
-		until item or not ENABLED
-	end
+if not item then  
+	repeat  
+		RunService.Heartbeat:Wait()  
+		item = Marketplace:FindFirstChild(itemId)  
+	until item or not ENABLED  
+end  
 
-	if item then
-		handleItem(item)
-	end
+if item then  
+	handleItem(item)  
+end
+
 end)
 
 --// Buy newest item on join
 task.spawn(function()
 
-	local newest
-	local newestTime = -math.huge
+local newest  
+local newestTime = -math.huge  
 
-	for _, item in ipairs(Marketplace:GetChildren()) do
-		local rt = tonumber(item:GetAttribute("releaseTime"))
+for _, item in ipairs(Marketplace:GetChildren()) do  
+	local rt = tonumber(item:GetAttribute("releaseTime"))  
 
-		if rt and rt > newestTime then
-			newestTime = rt
-			newest = item
-		end
-	end
+	if rt and rt > newestTime then  
+		newestTime = rt  
+		newest = item  
+	end  
+end  
 
-	if newest then
-		handleItem(newest)
-	end
+if newest then  
+	handleItem(newest)  
+end
+
 end)
 
 --// Anti AFK
 player.Idled:Connect(function()
-
-	VirtualUser:Button2Down(Vector2.zero, workspace.CurrentCamera.CFrame)
-
-	task.wait(1)
-
-	VirtualUser:Button2Up(Vector2.zero, workspace.CurrentCamera.CFrame)
+VirtualUser:Button2Down(Vector2.zero, workspace.CurrentCamera.CFrame)
+task.wait(1)
+VirtualUser:Button2Up(Vector2.zero, workspace.CurrentCamera.CFrame)
 end)
 
-print("⚡ Optimized Balanced Sniper Loaded")
+print("â¡ Optimized Balanced Sniper Loaded")
+
+“I can add what # i want or random ?”
